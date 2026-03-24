@@ -1,6 +1,6 @@
 import { startOfDay } from 'date-fns';
 import type { Client } from '../types';
-import { isDueThisMonth, parseLocalDate } from '../utils/dateHelpers';
+import { effectiveCardRenewalIso, getCardRenewalStatus, isDueThisMonth, parseLocalDate } from '../utils/dateHelpers';
 
 interface KPICardsProps {
   clients: Client[];
@@ -13,6 +13,14 @@ export function KPICards({ clients }: KPICardsProps) {
   const totalACs = clients.reduce((s, c) => s + c.noOfACs, 0);
   const jet = clients.filter((c) => c.jetOrSimple === 'Jet').length;
   const simple = clients.filter((c) => c.jetOrSimple === 'Simple').length;
+
+  const cardsExpiringSoon = clients.filter((c) => {
+    if (!c.cardIssueDate?.trim()) return false;
+    const iso = effectiveCardRenewalIso(c);
+    if (!iso) return false;
+    const s = getCardRenewalStatus(iso);
+    return s === 'renewalOverdue' || s === 'renewalSoon';
+  }).length;
 
   const cards = [
     { label: 'Total Clients', value: String(clients.length), tone: 'slate' as const },
@@ -28,6 +36,11 @@ export function KPICards({ clients }: KPICardsProps) {
       tone: 'warn' as const,
     },
     {
+      label: 'Cards Expiring Soon',
+      value: String(cardsExpiringSoon),
+      tone: 'orange' as const,
+    },
+    {
       label: 'Jet / Simple',
       value: `${jet} Jet · ${simple} Simple`,
       tone: 'slate' as const,
@@ -35,7 +48,7 @@ export function KPICards({ clients }: KPICardsProps) {
   ];
 
   return (
-    <div className="grid grid-cols-2 gap-3 lg:grid-cols-5">
+    <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-6">
       {cards.map((c) => (
         <div
           key={c.label}
@@ -44,7 +57,9 @@ export function KPICards({ clients }: KPICardsProps) {
               ? 'border-red-200 bg-red-50'
               : c.tone === 'warn'
                 ? 'border-amber-200 bg-amber-50'
-                : 'border-slate-200 bg-white'
+                : c.tone === 'orange'
+                  ? 'border-orange-200 bg-orange-50'
+                  : 'border-slate-200 bg-white'
           }`}
         >
           <p className="text-xs font-medium text-slate-500">{c.label}</p>
@@ -54,7 +69,9 @@ export function KPICards({ clients }: KPICardsProps) {
                 ? 'text-red-700'
                 : c.tone === 'warn'
                   ? 'text-amber-800'
-                  : 'text-slate-900'
+                  : c.tone === 'orange'
+                    ? 'text-orange-900'
+                    : 'text-slate-900'
             }`}
           >
             {c.value}

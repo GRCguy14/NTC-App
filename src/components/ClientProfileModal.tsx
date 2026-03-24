@@ -1,6 +1,12 @@
 import type { Client } from '../types';
-import { STATUS_EMOJI, STATUS_LABEL } from '../utils/constants';
-import { formatDisplayDate, getClientStatus } from '../utils/dateHelpers';
+import type { CardRenewalStatus } from '../utils/constants';
+import { CARD_RENEWAL_EMOJI, CARD_RENEWAL_LABEL, STATUS_EMOJI, STATUS_LABEL } from '../utils/constants';
+import {
+  effectiveCardRenewalIso,
+  formatDisplayDate,
+  getCardRenewalStatus,
+  getClientStatus,
+} from '../utils/dateHelpers';
 
 interface ClientProfileModalProps {
   client: Client;
@@ -12,6 +18,13 @@ interface ClientProfileModalProps {
 function statusBadgeClass(status: ReturnType<typeof getClientStatus>) {
   if (status === 'overdue') return 'bg-red-100 text-red-800 border-red-200';
   if (status === 'dueSoon') return 'bg-amber-100 text-amber-900 border-amber-200';
+  return 'bg-emerald-100 text-emerald-800 border-emerald-200';
+}
+
+function cardRenewalBadgeClass(s: CardRenewalStatus) {
+  if (s === 'noDate') return 'bg-slate-100 text-slate-600 border-slate-200';
+  if (s === 'renewalOverdue') return 'bg-red-100 text-red-800 border-red-200';
+  if (s === 'renewalSoon') return 'bg-amber-100 text-amber-900 border-amber-200';
   return 'bg-emerald-100 text-emerald-800 border-emerald-200';
 }
 
@@ -27,6 +40,8 @@ export function ClientProfileModal({
   onRequestDelete,
 }: ClientProfileModalProps) {
   const status = getClientStatus(client.dueDate);
+  const cardRenewalIso = effectiveCardRenewalIso(client);
+  const cardRenewalStatus = getCardRenewalStatus(cardRenewalIso);
 
   return (
     <div
@@ -91,6 +106,43 @@ export function ClientProfileModal({
               <div className="col-span-2">
                 <dt className="text-slate-500">Due</dt>
                 <dd className="font-medium">{formatDisplayDate(client.dueDate)}</dd>
+              </div>
+            </dl>
+          </section>
+
+          <section>
+            <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+              Card details
+            </h3>
+            <dl className="mt-2 space-y-2 text-slate-800">
+              <div>
+                <dt className="text-slate-500">Card No.</dt>
+                <dd className="font-medium">{client.cardNo}</dd>
+              </div>
+              <div>
+                <dt className="text-slate-500">Card issue date</dt>
+                <dd className="font-medium">
+                  {client.cardIssueDate?.trim()
+                    ? formatDisplayDate(client.cardIssueDate.trim())
+                    : 'Not set'}
+                </dd>
+              </div>
+              <div>
+                <dt className="text-slate-500">Card renewal date</dt>
+                <dd className="font-medium">
+                  {cardRenewalIso ? formatDisplayDate(cardRenewalIso) : 'Not set'}
+                </dd>
+              </div>
+              <div>
+                <dt className="text-slate-500">Card renewal status</dt>
+                <dd>
+                  <span
+                    className={`inline-flex items-center gap-1 rounded border px-2 py-0.5 text-xs font-medium ${cardRenewalBadgeClass(cardRenewalStatus)}`}
+                  >
+                    <span aria-hidden>{CARD_RENEWAL_EMOJI[cardRenewalStatus]}</span>
+                    {CARD_RENEWAL_LABEL[cardRenewalStatus]}
+                  </span>
+                </dd>
               </div>
             </dl>
           </section>

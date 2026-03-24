@@ -1,7 +1,14 @@
 import type { Client } from '../types';
-import type { SortKey } from '../utils/constants';
-import { STATUS_EMOJI, STATUS_LABEL } from '../utils/constants';
-import { formatDisplayDate, getClientStatus, parseLocalDate, rowHighlightClass } from '../utils/dateHelpers';
+import type { CardRenewalStatus, SortKey } from '../utils/constants';
+import { CARD_RENEWAL_EMOJI, CARD_RENEWAL_LABEL, STATUS_EMOJI, STATUS_LABEL } from '../utils/constants';
+import {
+  effectiveCardRenewalIso,
+  formatDisplayDate,
+  getCardRenewalStatus,
+  getClientStatus,
+  parseLocalDate,
+  rowHighlightClass,
+} from '../utils/dateHelpers';
 
 export type SortDir = 'asc' | 'desc';
 
@@ -47,6 +54,19 @@ function washBadgeClass(jetOrSimple: string) {
     : 'bg-slate-100 text-slate-700 border-slate-200';
 }
 
+function cardRenewalBadgeClass(s: CardRenewalStatus) {
+  if (s === 'noDate') return 'bg-slate-100 text-slate-600 border-slate-200';
+  if (s === 'renewalOverdue') return 'bg-red-100 text-red-800 border-red-200';
+  if (s === 'renewalSoon') return 'bg-amber-100 text-amber-900 border-amber-200';
+  return 'bg-emerald-100 text-emerald-800 border-emerald-200';
+}
+
+function renewalSortValue(c: Client): number {
+  const iso = effectiveCardRenewalIso(c);
+  if (!iso) return Number.POSITIVE_INFINITY;
+  return parseLocalDate(iso).getTime();
+}
+
 function telHref(phone: string) {
   const digits = phone.replace(/\D/g, '');
   return digits ? `tel:${digits}` : undefined;
@@ -80,6 +100,7 @@ export function ClientTable({
             <th scope="col" className="px-3 py-2 text-left font-semibold text-slate-700">
               Status
             </th>
+            {cellHead('Card Renewal', 'cardRenewalDate', sortKey, sortDir, onSortChange)}
             <th scope="col" className="px-3 py-2 text-left font-semibold text-slate-700">
               Primary
             </th>
@@ -88,6 +109,8 @@ export function ClientTable({
         <tbody className="divide-y divide-slate-100">
           {clients.map((client) => {
             const status = getClientStatus(client.dueDate);
+            const cardRenewalIso = effectiveCardRenewalIso(client);
+            const cardRenewalStatus = getCardRenewalStatus(cardRenewalIso);
             const rowClass = rowHighlightClass(client.dueDate);
             const primaryName = client.primaryContactName?.trim();
             const primaryPhone = client.primaryPhone?.trim();
@@ -120,6 +143,14 @@ export function ClientTable({
                   >
                     <span aria-hidden>{STATUS_EMOJI[status]}</span>
                     {STATUS_LABEL[status]}
+                  </span>
+                </td>
+                <td className="whitespace-nowrap px-3 py-2">
+                  <span
+                    className={`inline-flex max-w-[11rem] items-center gap-1 rounded border px-2 py-0.5 text-xs font-medium ${cardRenewalBadgeClass(cardRenewalStatus)}`}
+                  >
+                    <span aria-hidden>{CARD_RENEWAL_EMOJI[cardRenewalStatus]}</span>
+                    {CARD_RENEWAL_LABEL[cardRenewalStatus]}
                   </span>
                 </td>
                 <td className="max-w-[180px] px-3 py-2 text-slate-800">
@@ -167,6 +198,16 @@ export function sortClients(
     }
     if (sortKey === 'name') {
       return a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }) * mul;
+    }
+    if (sortKey === 'cardRenewalDate') {
+      const aVal = renewalSortValue(a);
+      const bVal = renewalSortValue(b);
+      const aNull = aVal === Number.POSITIVE_INFINITY;
+      const bNull = bVal === Number.POSITIVE_INFINITY;
+      if (aNull && bNull) return 0;
+      if (aNull) return 1;
+      if (bNull) return -1;
+      return (aVal - bVal) * mul;
     }
     const da = parseLocalDate(a.dueDate).getTime();
     const db = parseLocalDate(b.dueDate).getTime();

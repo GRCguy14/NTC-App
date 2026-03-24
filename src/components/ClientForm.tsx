@@ -2,7 +2,7 @@ import { id } from '@instantdb/react';
 import { useMemo, useState } from 'react';
 import db from '../lib/db';
 import type { Client } from '../types';
-import { addOneYearIso } from '../utils/dateHelpers';
+import { addOneYearIso, addTwoYearsIso, formatDisplayDate } from '../utils/dateHelpers';
 
 type Mode = 'add' | 'edit';
 
@@ -23,6 +23,7 @@ export function ClientForm({ mode, client, allClients, onClose, onSaved }: Clien
   }, [allClients]);
 
   const [cardNo, setCardNo] = useState(client?.cardNo ?? '');
+  const [cardIssueDate, setCardIssueDate] = useState(client?.cardIssueDate ?? '');
   const [name, setName] = useState(client?.name ?? '');
   const [freq, setFreq] = useState<number>(client?.freq ?? 2);
   const [noOfACs, setNoOfACs] = useState<number>(client?.noOfACs ?? 1);
@@ -53,6 +54,8 @@ export function ClientForm({ mode, client, allClients, onClose, onSaved }: Clien
 
     const dueDateToSave = isImportedEdit ? dueDateImp : addOneYearIso(startDate);
 
+    const cardIssueTrim = cardIssueDate.trim();
+
     const payload = {
       srNo: mode === 'add' ? nextSrNo : client!.srNo,
       cardNo: cardNo.trim(),
@@ -67,6 +70,8 @@ export function ClientForm({ mode, client, allClients, onClose, onSaved }: Clien
       primaryPhone: primaryPhone.trim() || undefined,
       secondaryContactName: secondaryContactName.trim() || undefined,
       secondaryPhone: secondaryPhone.trim() || undefined,
+      cardIssueDate: cardIssueTrim || undefined,
+      cardRenewalDate: cardIssueTrim ? addTwoYearsIso(cardIssueTrim) : undefined,
     };
 
     if (mode === 'add') {
@@ -101,6 +106,27 @@ export function ClientForm({ mode, client, allClients, onClose, onSaved }: Clien
                 className="mt-1 w-full rounded-md border border-slate-300 px-2 py-1.5 text-sm"
                 value={cardNo}
                 onChange={(e) => setCardNo(e.target.value)}
+              />
+            </label>
+            <label className="block text-sm">
+              <span className="font-medium text-slate-700">Card issue date</span>
+              <input
+                type="date"
+                className="mt-1 w-full rounded-md border border-slate-300 px-2 py-1.5 text-sm"
+                value={cardIssueDate}
+                onChange={(e) => setCardIssueDate(e.target.value)}
+              />
+            </label>
+            <label className="block text-sm sm:col-span-2">
+              <span className="font-medium text-slate-700">Card renewal date (computed)</span>
+              <input
+                readOnly
+                className="mt-1 w-full cursor-not-allowed rounded-md border border-slate-200 bg-slate-50 px-2 py-1.5 text-sm text-slate-700"
+                value={
+                  cardIssueDate.trim()
+                    ? formatDisplayDate(addTwoYearsIso(cardIssueDate.trim()))
+                    : '—'
+                }
               />
             </label>
             <label className="block text-sm sm:col-span-2">

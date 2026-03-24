@@ -2,8 +2,14 @@ import { useMemo, useState } from 'react';
 import { useSeedClients } from '../hooks/useSeedClients';
 import db from '../lib/db';
 import type { Client } from '../types';
-import type { FreqFilter, SortKey, StatusFilter, WashFilter } from '../utils/constants';
-import { getClientStatus } from '../utils/dateHelpers';
+import type {
+  CardRenewalFilter,
+  FreqFilter,
+  SortKey,
+  StatusFilter,
+  WashFilter,
+} from '../utils/constants';
+import { effectiveCardRenewalIso, getCardRenewalStatus, getClientStatus } from '../utils/dateHelpers';
 import { ClientForm } from './ClientForm';
 import { ClientProfileModal } from './ClientProfileModal';
 import { ClientTable, sortClients, type SortDir } from './ClientTable';
@@ -17,6 +23,7 @@ function filterClients(
   wash: WashFilter,
   status: StatusFilter,
   freq: FreqFilter,
+  cardRenewal: CardRenewalFilter,
 ): Client[] {
   let list = all;
   const q = search.trim().toLowerCase();
@@ -32,6 +39,12 @@ function filterClients(
   if (wash !== 'all') list = list.filter((c) => c.jetOrSimple === wash);
   if (status !== 'all') list = list.filter((c) => getClientStatus(c.dueDate) === status);
   if (freq !== 'all') list = list.filter((c) => String(c.freq) === freq);
+  if (cardRenewal !== 'all') {
+    list = list.filter((c) => {
+      const iso = effectiveCardRenewalIso(c);
+      return getCardRenewalStatus(iso) === cardRenewal;
+    });
+  }
   return list;
 }
 
@@ -45,6 +58,7 @@ export function Dashboard() {
   const [wash, setWash] = useState<WashFilter>('all');
   const [status, setStatus] = useState<StatusFilter>('all');
   const [freq, setFreq] = useState<FreqFilter>('all');
+  const [cardRenewal, setCardRenewal] = useState<CardRenewalFilter>('all');
 
   const [sortKey, setSortKey] = useState<SortKey>('dueDate');
   const [sortDir, setSortDir] = useState<SortDir>('asc');
@@ -57,8 +71,8 @@ export function Dashboard() {
   );
 
   const filtered = useMemo(
-    () => filterClients(clients, search, wash, status, freq),
-    [clients, search, wash, status, freq],
+    () => filterClients(clients, search, wash, status, freq, cardRenewal),
+    [clients, search, wash, status, freq, cardRenewal],
   );
 
   const sortedFiltered = useMemo(
@@ -147,6 +161,8 @@ export function Dashboard() {
               onStatusChange={setStatus}
               freq={freq}
               onFreqChange={setFreq}
+              cardRenewal={cardRenewal}
+              onCardRenewalChange={setCardRenewal}
               filteredCount={sortedFiltered.length}
               totalCount={clients.length}
             />

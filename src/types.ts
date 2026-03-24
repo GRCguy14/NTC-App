@@ -14,4 +14,6 @@ export interface Client {
   primaryPhone?: string | null;
   secondaryContactName?: string | null;
   secondaryPhone?: string | null;
+  cardIssueDate?: string | null;
+  cardRenewalDate?: string | null;
 }

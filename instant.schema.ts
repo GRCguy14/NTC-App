@@ -16,6 +16,8 @@ const _schema = i.schema({
       primaryPhone: i.string().optional(),
       secondaryContactName: i.string().optional(),
       secondaryPhone: i.string().optional(),
+      cardIssueDate: i.string().optional(),
+      cardRenewalDate: i.string().optional(),
     }),
   },
   links: {},

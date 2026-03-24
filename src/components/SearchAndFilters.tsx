@@ -1,4 +1,9 @@
-import type { FreqFilter, StatusFilter, WashFilter } from '../utils/constants';
+import type {
+  CardRenewalFilter,
+  FreqFilter,
+  StatusFilter,
+  WashFilter,
+} from '../utils/constants';
 
 interface SearchAndFiltersProps {
   search: string;
@@ -9,6 +14,8 @@ interface SearchAndFiltersProps {
   onStatusChange: (v: StatusFilter) => void;
   freq: FreqFilter;
   onFreqChange: (v: FreqFilter) => void;
+  cardRenewal: CardRenewalFilter;
+  onCardRenewalChange: (v: CardRenewalFilter) => void;
   filteredCount: number;
   totalCount: number;
 }
@@ -22,6 +29,8 @@ export function SearchAndFilters({
   onStatusChange,
   freq,
   onFreqChange,
+  cardRenewal,
+  onCardRenewalChange,
   filteredCount,
   totalCount,
 }: SearchAndFiltersProps) {
@@ -78,6 +87,20 @@ export function SearchAndFilters({
           <option value="3">3× per year</option>
           <option value="4">4× per year</option>
           <option value="5">5× per year</option>
+        </select>
+      </div>
+      <div>
+        <label className="mb-1 block text-xs font-medium text-slate-600">Card renewal</label>
+        <select
+          className={selectClass}
+          value={cardRenewal}
+          onChange={(e) => onCardRenewalChange(e.target.value as CardRenewalFilter)}
+        >
+          <option value="all">All</option>
+          <option value="renewalOverdue">Renewal Overdue</option>
+          <option value="renewalSoon">Renewal Soon</option>
+          <option value="active">Active</option>
+          <option value="noDate">No Card Date</option>
         </select>
       </div>
       <p className="text-sm text-slate-600 md:pb-1">
